@@ -147,20 +147,17 @@ trait PublishModule extends JavaModule { outer =>
     )
   }
 
+  val defaultGpgArgs = Seq("--batch", "--yes", "-a", "-b")
+
   /**
    * Publish all given artifacts to Sonatype.
    * @param gpgArgs GPG arguments. Defaults to `--batch --yes -a -b`.
-   *                 Specifying this will override/remove the defaults. Add the default args to your args to keep them.
+   *                Specifying this will override/remove the defaults. Add the default args to your args to keep them.
    */
   def publish(
       sonatypeCreds: String,
       signed: Boolean = true,
-      // mainargs wasn't handling a default value properly,
-      // so we instead use the empty Seq as default.
-      // see https://github.com/com-lihaoyi/mill/pull/1678
-      // TODO: In mill 0.11, we may want to change to a String argument
-      // which we can split at `,` symbols, as we do in `PublishModule.publishAll`.
-      gpgArgs: Seq[String] = Seq.empty,
+      gpgArgs: String = defaultGpgArgs.mkString(","),
       release: Boolean = false,
       readTimeout: Int = 60000,
       connectTimeout: Int = 5000,
@@ -173,7 +170,7 @@ trait PublishModule extends JavaModule { outer =>
       sonatypeSnapshotUri,
       sonatypeCreds,
       signed,
-      if (gpgArgs.isEmpty) PublishModule.defaultGpgArgs else gpgArgs,
+      gpgArgs.split(','),
       readTimeout,
       connectTimeout,
       T.log,
@@ -199,8 +196,6 @@ trait PublishModule extends JavaModule { outer =>
 }
 
 object PublishModule extends ExternalModule {
-  val defaultGpgArgs = Seq("--batch", "--yes", "-a", "-b")
-
   case class PublishData(meta: Artifact, payload: Seq[(PathRef, String)])
   object PublishData {
     implicit def jsonify: upickle.default.ReadWriter[PublishData] = upickle.default.macroRW
